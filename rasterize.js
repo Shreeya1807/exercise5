@@ -4,7 +4,7 @@
 const WIN_Z = 0;  // default graphics window z coord in world space
 const WIN_LEFT = 0; const WIN_RIGHT = 1;  // default left and right x coords in world space
 const WIN_BOTTOM = 0; const WIN_TOP = 1;  // default top and bottom y coords in world space
-const INPUT_TRIANGLES_URL = "https://raw.githubusercontent.com/NCSUCGClassPrivate/exercise5/async/triangles.json"; // triangles file loc
+const INPUT_TRIANGLES_URL = "triangles.json"; // triangles file loc
 const INPUT_ELLIPSOIDS_URL = "https://raw.githubusercontent.com/NCSUCGClassPrivate/exercise5/async/ellipsoids.json"; // ellipsoids file loc
 var Eye = new vec4.fromValues(0.5,0.5,-0.5,1.0); // default eye position in world space
 
@@ -155,19 +155,55 @@ function setupShaders() {
     
     // define fragment shader in essl using es6 template strings
     var fShaderCode = `
-        void main(void) {
-            gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0); // all fragments are white
-        }
-    `;
+    precision mediump float;
+    varying vec3 vColor;
+
+    void main(void) {
+        gl_FragColor = vec4(vColor, 1.0);
+    }
+`;
     
     // define vertex shader in essl using es6 template strings
-    var vShaderCode = `
-        attribute vec3 vertexPosition;
+   var vShaderCode = `
+    attribute vec3 vertexPosition;
+    varying vec3 vColor;
 
-        void main(void) {
-            gl_Position = vec4(vertexPosition, 1.0); // use the untransformed position
-        }
-    `;
+    void main(void) {
+        // Center the shapes and change their proportions.
+        vec2 p = (vertexPosition.xy - vec2(0.25, 0.525))
+                 * vec2(3.2, 2.0);
+
+        // Rotate 15 degrees clockwise.
+        float angle = radians(-15.0);
+        float c = cos(angle);
+        float s = sin(angle);
+
+        vec2 rotated = vec2(
+            c * p.x - s * p.y,
+            s * p.x + c * p.y
+        );
+
+        // Move the shapes slightly right.
+        gl_Position = vec4(
+            rotated + vec2(0.10, 0.0),
+            vertexPosition.z,
+            1.0
+        );
+
+        // Create a cyan-to-pink gradient.
+        float t = clamp(
+            (vertexPosition.x - 0.15) / 0.20,
+            0.0,
+            1.0
+        );
+
+        vColor = mix(
+            vec3(0.05, 0.85, 1.0),
+            vec3(1.0, 0.20, 0.65),
+            t
+        );
+    }
+`;
     
     try {
         // console.log("fragment shader: "+fShaderCode);
